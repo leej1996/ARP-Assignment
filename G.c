@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <time.h>
 #include <string.h>
 
 #define PORT 8080
@@ -22,14 +21,13 @@ int main(int argc, char*argv[]){
     //acts as the server and will receive tokens
     //from the previous machine via socket and
     //dispatch them to P via pipe
-    int g_sockfd, g_newsockfd, g_clilen, g_n;
-    char g_buffer[BUFFSIZE];
-    char g_token[BUFFSIZE];
-    struct sockaddr_in g_serv_addr, g_cli_addr;
-    struct timespec spec;
-    char* pend;
 
-    /*
+    char g_buffer_read[BUFFSIZE];
+	char g_buffer_write[BUFFSIZE];
+    int g_sockfd, g_newsockfd, g_clilen, g_n;
+    struct sockaddr_in g_serv_addr, g_cli_addr;
+
+
     //create new socket
     g_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (g_sockfd < 0){
@@ -47,6 +45,7 @@ int main(int argc, char*argv[]){
         error("ERROR on binding");
     }
 
+	printf("G: We are listening\n");
     listen(g_sockfd,5);
 
     g_clilen = sizeof(g_cli_addr);
@@ -54,45 +53,31 @@ int main(int argc, char*argv[]){
     if (g_newsockfd < 0){
         error("ERROR on accept");
     }
-    */
-    bzero(g_buffer,256);
+    bzero(g_buffer_read,BUFFSIZE);
     //reading token from client through socket
 
-    int i = 0;
-    const char* tmp1 = "-1";
-    const char* tmp2 = "-0.5";
-    const char* tmp3 = "0";
-    const char* tmp4 = "-.5";
-    const char* tmp5 = "1";
+    //initialize and send token
+    strncpy(g_buffer_write,"0", BUFFSIZE);
+    g_n = write(atoi(argv[1]), &g_buffer_write, BUFFSIZE);
+    if (g_n < 0){
+        error("ERROR writing to pipe");
+    }
     while (1){
-        //g_n = read(g_newsockfd, g_buffer, 255);
-        //if (g_n < 0){
-            //error("ERROR reading from socket");
-        //}
-        //g_token = strtof(g_buffer, &pend);
-
-        //sending token to P via pipe
-        if (i == 0){
-            strncpy(g_buffer, tmp1, BUFFSIZE);
-        }else if (i == 1){
-            strncpy(g_buffer, tmp2, BUFFSIZE);
-        }else if (i == 2){
-            strncpy(g_buffer, tmp3, BUFFSIZE);
-        }else if (i == 3){
-            strncpy(g_buffer, tmp4, BUFFSIZE);
-        }else if (i == 4){
-            strncpy(g_buffer, tmp5, BUFFSIZE);
-        } else {
-            i = 0;
-        }
-
-        g_n = write(atoi(argv[1]), &g_buffer, sizeof(g_buffer));
+        //read token from socket
+        g_n = read(g_newsockfd, &g_buffer_read, BUFFSIZE);
         if (g_n < 0){
-            error("ERROR writing to socket");
+            error("ERROR reading from socket");
         }
-        i++;
-        sleep(2);
-        //write(atoi(argv[2]), g_token,sizeof(message));  //write on the pipe to child2
+        printf("G: We are reading: %s\n", g_buffer_read);
+		
+		strncpy(g_buffer_write,g_buffer_read, BUFFSIZE);
+        //send token to P via pipe
+        g_n = write(atoi(argv[1]), &g_buffer_write, BUFFSIZE);
+        if (g_n < 0){
+            error("ERROR writing to pipe");
+        }
+        printf("G: We write %s to P.\n", g_buffer_write);
+        //sending token to P via pipe
 
     }
 

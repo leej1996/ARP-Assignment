@@ -9,7 +9,6 @@
 
 #define BUFFSIZE 8192
 
-int fd[2];
 static int alarm_fired = 0;
 
 void error(const char *msg);
@@ -53,7 +52,6 @@ int main(int argc, char *argv[]){
             print_log();
             alarm_fired = 0;
         }
-        sleep(1);
     }
     return 0;
 }
